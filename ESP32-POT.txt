@@ -1,0 +1,15 @@
+#include <Arduino.h>
+#define POT_PIN 34   // Pin ADC1 del ESP32
+
+void setup() {
+  Serial.begin(115200);
+
+  // Configurar ADC para rango 0–3.3V
+  analogSetPinAttenuation(POT_PIN, ADC_11db);
+}
+
+void loop() {
+  int value = analogRead(POT_PIN);
+  Serial.println(value);
+  delay(100);
+}

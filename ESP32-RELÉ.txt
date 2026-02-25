@@ -1,0 +1,20 @@
+#define BUTTON_PIN 15
+#define RELAY_PIN  26
+
+void setup() {
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Pulsador con pull-up
+  pinMode(RELAY_PIN, OUTPUT);
+
+  digitalWrite(RELAY_PIN, LOW); // Relé apagado al inicio
+}
+
+void loop() {
+  int buttonState = digitalRead(BUTTON_PIN);
+
+  // Pulsador presionado (LOW por pull-up)
+  if (buttonState == LOW) {
+    digitalWrite(RELAY_PIN, HIGH);  // Activar relé
+  } else {
+    digitalWrite(RELAY_PIN, LOW);   // Desactivar relé
+  }
+}

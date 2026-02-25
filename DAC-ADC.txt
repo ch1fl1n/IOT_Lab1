@@ -1,0 +1,27 @@
+#define DAC_PIN 25
+#define ADC_PIN 34
+
+void setup() {
+  Serial.begin(115200);
+  analogSetPinAttenuation(ADC_PIN, ADC_11db);
+}
+
+void loop() {
+  for (int i = 0; i <= 255; i += 10) {
+    dacWrite(DAC_PIN, i);
+
+    delay(10); // Tiempo de estabilización
+
+    int adcValue = analogRead(ADC_PIN);
+    float voltage = adcValue * (3.3 / 4095.0);
+
+    Serial.print("DAC: ");
+    Serial.print(i);
+    Serial.print(" | ADC: ");
+    Serial.print(adcValue);
+    Serial.print(" | Voltaje: ");
+    Serial.println(voltage);
+
+    delay(200);
+  }
+}

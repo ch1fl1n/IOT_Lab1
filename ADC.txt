@@ -1,0 +1,18 @@
+#define ADC_PIN 34
+
+void setup() {
+  Serial.begin(115200);
+  analogSetPinAttenuation(ADC_PIN, ADC_11db); // 0–3.3V
+}
+
+void loop() {
+  int adcValue = analogRead(ADC_PIN);
+  float voltage = adcValue * (3.3 / 4095.0);
+
+  Serial.print("ADC: ");
+  Serial.print(adcValue);
+  Serial.print(" | Voltaje: ");
+  Serial.println(voltage);
+
+  delay(100);
+}

@@ -1,0 +1,48 @@
+#include <Wire.h>
+
+#define MPU_ADDR 0x68
+
+int16_t accX, accY, accZ;
+int16_t gyroX, gyroY, gyroZ;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);   // SDA, SCL
+
+  // Despertar MPU6050
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(0x6B);    // Registro PWR_MGMT_1
+  Wire.write(0);       // Wake up
+  Wire.endTransmission(true);
+
+  Serial.println("MPU6050 listo");
+}
+
+void loop() {
+  Wire.beginTransmission(MPU_ADDR);
+  Wire.write(0x3B); // Registro inicial ACCEL_XOUT_H
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_ADDR, 14, true);
+
+  accX  = Wire.read() << 8 | Wire.read();
+  accY  = Wire.read() << 8 | Wire.read();
+  accZ  = Wire.read() << 8 | Wire.read();
+
+  Wire.read(); Wire.read(); // Temperatura (ignorada)
+
+  gyroX = Wire.read() << 8 | Wire.read();
+  gyroY = Wire.read() << 8 | Wire.read();
+  gyroZ = Wire.read() << 8 | Wire.read();
+
+  Serial.print("ACCEL [X Y Z]: ");
+  Serial.print(accX); Serial.print(" ");
+  Serial.print(accY); Serial.print(" ");
+  Serial.print(accZ);
+
+  Serial.print(" | GYRO [X Y Z]: ");
+  Serial.print(gyroX); Serial.print(" ");
+  Serial.print(gyroY); Serial.print(" ");
+  Serial.println(gyroZ);
+
+  delay(500);
+}

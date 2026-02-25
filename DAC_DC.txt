@@ -1,0 +1,10 @@
+#define DAC_PIN 25
+
+void setup() {
+  // Nada especial
+}
+
+void loop() {
+  dacWrite(DAC_PIN, 128); // Voltaje medio (~1.65V)
+  delay(1000);
+}
