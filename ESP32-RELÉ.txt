@@ -1,20 +1,35 @@
 #define BUTTON_PIN 15
 #define RELAY_PIN  26
 
-void setup() {
-  pinMode(BUTTON_PIN, INPUT_PULLUP); // Pulsador con pull-up
-  pinMode(RELAY_PIN, OUTPUT);
+const unsigned long DEBOUNCE_MS = 30;
 
-  digitalWrite(RELAY_PIN, LOW); // Relé apagado al inicio
+int lastReading = HIGH;
+int stableState = HIGH;
+unsigned long lastChangeTime = 0;
+
+void setup() {
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // Pulsador entre pin y GND
+  pinMode(RELAY_PIN, OUTPUT);        // IN del módulo de relé
+
+  digitalWrite(RELAY_PIN, LOW);      // Relé apagado al inicio
 }
 
 void loop() {
-  int buttonState = digitalRead(BUTTON_PIN);
+  int reading = digitalRead(BUTTON_PIN);
 
-  // Pulsador presionado (LOW por pull-up)
-  if (buttonState == LOW) {
-    digitalWrite(RELAY_PIN, HIGH);  // Activar relé
-  } else {
-    digitalWrite(RELAY_PIN, LOW);   // Desactivar relé
+  if (reading != lastReading) {
+    lastChangeTime = millis();
+    lastReading = reading;
+  }
+
+  if ((millis() - lastChangeTime) > DEBOUNCE_MS && reading != stableState) {
+    stableState = reading;
+
+    // Pulsador presionado (LOW por INPUT_PULLUP)
+    if (stableState == LOW) {
+      digitalWrite(RELAY_PIN, HIGH); // Activa bobina del relé
+    } else {
+      digitalWrite(RELAY_PIN, LOW);  // Desactiva bobina del relé
+    }
   }
 }
