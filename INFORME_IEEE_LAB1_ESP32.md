@@ -10,7 +10,7 @@
 En este laboratorio se implementaron y evaluaron sistemas básicos de adquisición y generación de señales con un módulo ESP32, apoyados por un osciloscopio y un generador de funciones. Se trabajó con los módulos ADC y DAC del microcontrolador para analizar su principio de operación, su comportamiento experimental y sus limitaciones prácticas. Los resultados muestran que el ESP32 es adecuado para aplicaciones educativas y de prototipado, aunque presenta restricciones de resolución, linealidad, ruido y velocidad efectiva de muestreo frente a instrumentación profesional.
 
 ## I. Introducción
-La adquisición y generación de señales analógicas mediante microcontroladores permite comprender conceptos fundamentales de instrumentación electrónica. En esta práctica se estudió el comportamiento del ADC y DAC del ESP32 mediante pruebas con potenciómetro, generador de señales, multímetro y osciloscopio, además de una validación cruzada entre grupos (generador ↔ osciloscopio).
+La adquisición y generación de señales analógicas mediante microcontroladores permite comprender conceptos fundamentales de instrumentación electrónica. En esta práctica se estudió el comportamiento del ADC y DAC del ESP32 mediante pruebas con potenciómetro, generador de señales y osciloscopio, además de una validación cruzada entre grupos (generador ↔ osciloscopio).
 
 ## II. Fundamento teórico
 ### A. Conversión Analógico-Digital (ADC)
@@ -56,15 +56,10 @@ Se varió manualmente el potenciómetro y se observó la lectura en Serial Monit
 
 Se evaluó forma de onda y respuesta al incrementar frecuencia.
 
-### C. Prueba 3 — Verificación DAC con multímetro
-- Salida DAC: GPIO25
-- Medición DC respecto a GND
-- Rampa digital en pasos de 16 (0 a 192)
-
-### D. Prueba 4 — DAC con osciloscopio
+### C. Prueba 3 — DAC con osciloscopio
 Se analizaron señales senoidal, triangular y cuadrada para diferentes frecuencias.
 
-### E. Prueba 5 — Validación cruzada entre grupos
+### D. Prueba 4 — Validación cruzada entre grupos
 Se conectó la salida DAC del ESP32 emisor a la entrada ADC del ESP32 receptor con GND común para evaluar generación y adquisición en cadena real.
 
 ## IV. Resultados y discusión
@@ -90,49 +85,16 @@ Los datos son consistentes con la teoría para ADC de 12 bits, con ruido atribui
 
 Conclusión: la tasa efectiva de muestreo con `analogRead()` + serial está por debajo de la capacidad máxima teórica del hardware.
 
-### C. Verificación del DAC con multímetro
-**Tabla 1. Medición experimental del DAC**
-
-| Valor DAC | Voltaje medido (V) |
-|---:|---:|
-| 0 | 0.000 |
-| 16 | 0.207 |
-| 32 | 0.414 |
-| 48 | 0.621 |
-| 64 | 0.828 |
-| 80 | 1.035 |
-| 96 | 1.242 |
-| 112 | 1.449 |
-| 128 | 1.656 |
-| 144 | 1.864 |
-| 160 | 2.071 |
-| 176 | 2.278 |
-| 192 | 2.485 |
-
-Paso teórico del DAC:
-
-$$
-LSB_{DAC}=\frac{3.3\,V}{255}\approx 12.94\,mV
-$$
-
-Para incremento de 16 cuentas:
-
-$$
-\Delta V\approx16\times 12.94\,mV\approx 0.207\,V
-$$
-
-El valor observado coincide con lo esperado y confirma comportamiento aproximadamente lineal.
-
-### D. DAC con osciloscopio
+### C. DAC con osciloscopio
 - **Senoidal:** buena forma a baja frecuencia, escalones en media y degradación en alta frecuencia.
 - **Triangular:** linealidad aceptable, redondeo en vértices por tiempo de establecimiento.
 - **Cuadrada:** flancos limitados por `slew rate`, ligero overshoot y ruido en niveles.
 
-### E. Prueba cruzada entre grupos
+### D. Prueba cruzada entre grupos
 La señal recibida mostró escalonamiento por doble cuantización (DAC de 8 bits en emisor + ADC de 12 bits en receptor), además de jitter de muestreo y ausencia de filtro anti-aliasing.
 
 ## V. Comparación con instrumentación profesional
-**Tabla 2. ESP32 vs equipo profesional**
+**Tabla 1. ESP32 vs equipo profesional**
 
 | Aspecto | Sistema ESP32 | Equipo profesional |
 |---|---|---|

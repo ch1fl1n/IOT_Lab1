@@ -1,27 +1,125 @@
-#define DAC_PIN 25
-#define ADC_PIN 34
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_rom_sys.h"
 
-void setup() {
-  Serial.begin(115200);
-  analogSetPinAttenuation(ADC_PIN, ADC_11db);
+// Pines I2C por software
+#define SDA_PIN 21
+#define SCL_PIN 22
+
+#define MPU_ADDR 0x68
+#define PWR_MGMT_1 0x6B
+#define WHO_AM_I   0x75
+
+// ---------- I2C SOFTWARE ----------
+static void i2c_delay() {
+    esp_rom_delay_us(5);
 }
 
-void loop() {
-  for (int i = 0; i <= 255; i += 10) {
-    dacWrite(DAC_PIN, i);
+static void i2c_start() {
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SDA_PIN, 0);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+}
 
-    delay(10); // Tiempo de estabilización
+static void i2c_stop() {
+    gpio_set_level(SDA_PIN, 0);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SDA_PIN, 1);
+}
 
-    int adcValue = analogRead(ADC_PIN);
-    float voltage = adcValue * (3.3 / 4095.0);
+static void i2c_write_byte(uint8_t data) {
+    for (int i = 0; i < 8; i++) {
+        gpio_set_level(SDA_PIN, (data & 0x80) != 0);
+        data <<= 1;
+        gpio_set_level(SCL_PIN, 1);
+        i2c_delay();
+        gpio_set_level(SCL_PIN, 0);
+    }
 
-    Serial.print("DAC: ");
-    Serial.print(i);
-    Serial.print(" | ADC: ");
-    Serial.print(adcValue);
-    Serial.print(" | Voltaje: ");
-    Serial.println(voltage);
+    // ACK (ignoramos resultado)
+    gpio_set_direction(SDA_PIN, GPIO_MODE_INPUT);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+}
 
-    delay(200);
-  }
+static uint8_t i2c_read_byte() {
+    uint8_t data = 0;
+    gpio_set_direction(SDA_PIN, GPIO_MODE_INPUT);
+
+    for (int i = 0; i < 8; i++) {
+        gpio_set_level(SCL_PIN, 1);
+        i2c_delay();
+        data = (data << 1) | gpio_get_level(SDA_PIN);
+        gpio_set_level(SCL_PIN, 0);
+        i2c_delay();
+    }
+
+    // NACK
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+
+    return data;
+}
+
+// ---------- MPU6050 ----------
+static void mpu_write(uint8_t reg, uint8_t val) {
+    i2c_start();
+    i2c_write_byte(MPU_ADDR << 1);
+    i2c_write_byte(reg);
+    i2c_write_byte(val);
+    i2c_stop();
+}
+
+static uint8_t mpu_read(uint8_t reg) {
+    i2c_start();
+    i2c_write_byte(MPU_ADDR << 1);
+    i2c_write_byte(reg);
+    i2c_start();
+    i2c_write_byte((MPU_ADDR << 1) | 1);
+    uint8_t val = i2c_read_byte();
+    i2c_stop();
+    return val;
+}
+
+// ---------- MAIN ----------
+void app_main(void) {
+
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(SCL_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Despertar MPU6050
+    mpu_write(PWR_MGMT_1, 0x00);
+
+    // Leer WHO_AM_I
+    uint8_t id = mpu_read(WHO_AM_I);
+
+    printf("MPU6050 WHO_AM_I = 0x%02X\n", id);
+
+    while (1) {
+
+    uint8_t ax_h = mpu_read(0x3B);
+    uint8_t ax_l = mpu_read(0x3C);
+    int16_t ax = (ax_h << 8) | ax_l;
+
+    float ax_g = ax / 16384.0;
+
+    printf("AX = %.2f g\n", ax_g);
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
 }
