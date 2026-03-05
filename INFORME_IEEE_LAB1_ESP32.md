@@ -1,18 +1,13 @@
 # Formato IEEE — Informe de Laboratorio 1 (ESP32, ADC/DAC)
 
 **Título del trabajo:** Evaluación experimental de los módulos ADC y DAC del ESP32 mediante instrumentación básica y prueba cruzada entre grupos  
-**Autores:** [Nombres del equipo]  
-**Curso:** [Nombre de la asignatura]  
-**Docente:** [Nombre del docente]  
+**Autores:** Daniel David Gomez Britto | Juan Camilo SIlva Velasco  
+**Curso:** Internet de las cosas
+**Docente:** Fabian Mauricio Paez Rivera
 **Fecha:** 04/03/2026
 
 ## Abstract
 En este laboratorio se implementaron y evaluaron sistemas básicos de adquisición y generación de señales con un módulo ESP32, apoyados por un osciloscopio y un generador de funciones. Se trabajó con los módulos ADC y DAC del microcontrolador para analizar su principio de operación, su comportamiento experimental y sus limitaciones prácticas. Los resultados muestran que el ESP32 es adecuado para aplicaciones educativas y de prototipado, aunque presenta restricciones de resolución, linealidad, ruido y velocidad efectiva de muestreo frente a instrumentación profesional.
-
-## Keywords
-ESP32, ADC, DAC, SAR, cuantización, aliasing, osciloscopio digital, instrumentación.
-
----
 
 ## I. Introducción
 La adquisición y generación de señales analógicas mediante microcontroladores permite comprender conceptos fundamentales de instrumentación electrónica. En esta práctica se estudió el comportamiento del ADC y DAC del ESP32 mediante pruebas con potenciómetro, generador de señales, multímetro y osciloscopio, además de una validación cruzada entre grupos (generador ↔ osciloscopio).
