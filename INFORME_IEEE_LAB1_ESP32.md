@@ -13,6 +13,8 @@ Se implementaron y evaluaron experimentos de generación y adquisición analógi
 
 Los resultados muestran la idoneidad del ESP32 para **enseñanza y prototipado** y evidencian limitaciones en **resolución, linealidad y velocidad efectiva**. Finalmente se proponen mejoras de software y acondicionamiento analógico para mejorar precisión y estabilidad.
 
+**Keywords—** ESP32, ADC, DAC, SAR, cuantización, jitter, osciloscopio, instrumentación.
+
 ---
 
 # I. Introducción
@@ -413,14 +415,34 @@ Para aplicaciones que requieran **mayor precisión o estabilidad**, se recomiend
 
 ---
 
-# X. Trabajo futuro
+# X. Nota técnica de carga de firmware (botón BOOT)
 
-Se proponen los siguientes pasos para continuar la experimentación:
+Durante la práctica, al intentar cargar el programa al ESP32 se observó que, en algunos intentos, el proceso fallaba si no se mantenía presionado el botón **BOOT** durante el inicio de la escritura.
 
-1. Calibrar el DAC mediante mediciones reales de salida.
-2. Implementar adquisición ADC con **DMA**.
-3. Incorporar **amplificadores operacionales** como buffer.
-4. Añadir **filtros pasa-bajo** para reducir aliasing.
-5. Expandir la lectura del **MPU6050** para incluir todos los ejes del acelerómetro y giroscopio.
+Esto ocurre porque, para programar el chip, el ESP32 debe entrar en **modo bootloader (UART Download Mode)**. Si el circuito de auto-programación de la placa (control de líneas `EN` y `IO0`) no realiza correctamente la secuencia, el microcontrolador inicia en modo de ejecución normal y el cargador reporta error de sincronización.
+
+Al mantener presionado **BOOT**, el pin `GPIO0` se fuerza al estado requerido para entrar en modo descarga, permitiendo que la carga del firmware se complete de forma correcta.
+
+Factores comunes que agravan este problema:
+- Cable USB de baja calidad o solo de carga.
+- Alimentación inestable del puerto USB.
+- Drivers USB-serial incorrectos o con fallas.
+- Implementación deficiente del auto-reset en algunos clones de placas.
+
+Como procedimiento práctico, cuando aparece el error de conexión, se recomienda iniciar la carga y mantener **BOOT** presionado hasta que el entorno indique que comenzó la escritura en flash.
 
 ---
+
+# XI. Referencias bibliográficas
+
+[1] Espressif Systems, *ESP32 Technical Reference Manual*, Espressif, 2024.
+
+[2] Espressif Systems, *ESP32 Series Datasheet*, Espressif, 2024.
+
+[3] Espressif Systems, *ESP-IDF Programming Guide*, [En línea]. Disponible en: https://docs.espressif.com/
+
+[4] Arduino-ESP32 Core, *Arduino core for the ESP32*, [En línea]. Disponible en: https://github.com/espressif/arduino-esp32
+
+[5] TDK InvenSense, *MPU-6000/MPU-6050 Product Specification*, 2013.
+
+
