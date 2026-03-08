@@ -450,26 +450,182 @@ Al presionar el botón, el relé se activa.
 
 ## Simulación B — Sensor MPU6050
 
-Se implementó comunicación **I2C por software**.
+### Código 
 
-El sistema:
+```c
+#include <stdio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_rom_sys.h"
 
-- despierta el sensor
-- lee el registro **WHO_AM_I**
-- obtiene valores del acelerómetro
+// Pines I2C por software
+#define SDA_PIN 21
+#define SCL_PIN 22
 
-### Pines usados
+#define MPU_ADDR 0x68
+#define PWR_MGMT_1 0x6B
+#define WHO_AM_I   0x75
 
-| Señal | Pin |
-|------|------|
-| SDA | 21 |
-| SCL | 22 |
+// ---------- I2C SOFTWARE ----------
+static void i2c_delay() {
+    esp_rom_delay_us(5);
+}
 
-El registro **WHO_AM_I** normalmente devuelve:
+static void i2c_start() {
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SDA_PIN, 0);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+}
+
+static void i2c_stop() {
+    gpio_set_level(SDA_PIN, 0);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SDA_PIN, 1);
+}
+
+static void i2c_write_byte(uint8_t data) {
+    for (int i = 0; i < 8; i++) {
+        gpio_set_level(SDA_PIN, (data & 0x80) != 0);
+        data <<= 1;
+        gpio_set_level(SCL_PIN, 1);
+        i2c_delay();
+        gpio_set_level(SCL_PIN, 0);
+    }
+
+    // ACK (ignoramos resultado)
+    gpio_set_direction(SDA_PIN, GPIO_MODE_INPUT);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+}
+
+static uint8_t i2c_read_byte() {
+    uint8_t data = 0;
+    gpio_set_direction(SDA_PIN, GPIO_MODE_INPUT);
+
+    for (int i = 0; i < 8; i++) {
+        gpio_set_level(SCL_PIN, 1);
+        i2c_delay();
+        data = (data << 1) | gpio_get_level(SDA_PIN);
+        gpio_set_level(SCL_PIN, 0);
+        i2c_delay();
+    }
+
+    // NACK
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+    i2c_delay();
+    gpio_set_level(SCL_PIN, 0);
+
+    return data;
+}
+
+// ---------- MPU6050 ----------
+static void mpu_write(uint8_t reg, uint8_t val) {
+    i2c_start();
+    i2c_write_byte(MPU_ADDR << 1);
+    i2c_write_byte(reg);
+    i2c_write_byte(val);
+    i2c_stop();
+}
+
+static uint8_t mpu_read(uint8_t reg) {
+    i2c_start();
+    i2c_write_byte(MPU_ADDR << 1);
+    i2c_write_byte(reg);
+    i2c_start();
+    i2c_write_byte((MPU_ADDR << 1) | 1);
+    uint8_t val = i2c_read_byte();
+    i2c_stop();
+    return val;
+}
+
+// ---------- MAIN ----------
+void app_main(void) {
+
+    gpio_set_direction(SDA_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(SCL_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_level(SDA_PIN, 1);
+    gpio_set_level(SCL_PIN, 1);
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Despertar MPU6050
+    mpu_write(PWR_MGMT_1, 0x00);
+
+    // Leer WHO_AM_I
+    uint8_t id = mpu_read(WHO_AM_I);
+
+    printf("MPU6050 WHO_AM_I = 0x%02X\n", id);
+
+    while (1) {
+
+        uint8_t ax_h = mpu_read(0x3B);
+        uint8_t ax_l = mpu_read(0x3C);
+        int16_t ax = (ax_h << 8) | ax_l;
+
+        float ax_g = ax / 16384.0;
+
+        printf("AX = %.2f g\n", ax_g);
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
 
 ```
-0x68
-```
+
+Se implementa la comunicación entre el ESP32 y el sensor MPU6050 utilizando el protocolo I2C, pero en este caso mediante una implementación por software (bit-banging) en lugar de utilizar el controlador I2C hardware del microcontrolador. Esto permite comprender con mayor detalle cómo funciona el protocolo a nivel de señales digitales.
+
+Para la comunicación se utilizan dos pines del ESP32:
+
+GPIO21 como línea SDA (Serial Data)
+
+GPIO22 como línea SCL (Serial Clock)
+
+Estas líneas se controlan manualmente mediante funciones que generan las condiciones básicas del protocolo I2C, tales como:
+
+Condición de inicio (START) mediante i2c_start()
+
+Condición de parada (STOP) mediante i2c_stop()
+
+Escritura de un byte mediante i2c_write_byte()
+
+Lectura de un byte mediante i2c_read_byte()
+
+Cada bit se transmite controlando el nivel lógico de la línea SDA mientras se generan pulsos de reloj en la línea SCL, siguiendo el funcionamiento estándar del protocolo I2C. Para garantizar la temporización adecuada se introduce un pequeño retardo usando la función esp_rom_delay_us().
+
+Una vez implementada la capa básica de comunicación I2C, el código define funciones específicas para interactuar con el MPU6050, utilizando su dirección I2C 0x68. Estas funciones son:
+
+mpu_write() para escribir valores en los registros internos del sensor.
+
+mpu_read() para leer valores almacenados en dichos registros.
+
+Durante la inicialización del sistema, el programa envía un comando al registro PWR_MGMT_1 (0x6B) con el valor 0x00, lo cual permite despertar el sensor, ya que por defecto el MPU6050 inicia en modo de bajo consumo.
+
+Posteriormente se realiza una lectura del registro WHO_AM_I (0x75), el cual contiene el identificador del dispositivo. Esta lectura permite verificar que la comunicación I2C se estableció correctamente y que el sensor responde adecuadamente al microcontrolador.
+
+Una vez verificada la conexión, el programa entra en un bucle infinito donde realiza lecturas periódicas del acelerómetro en el eje X. Para ello se leen dos registros consecutivos:
+
+0x3B → parte alta del valor del acelerómetro en X
+
+0x3C → parte baja del valor del acelerómetro en X
+
+Ambos bytes se combinan para formar un valor de 16 bits con signo, que representa la aceleración medida por el sensor. Este valor se convierte posteriormente a unidades físicas de gravedad (g) utilizando el factor de escala del acelerómetro:
+
+ax_g = ax / 16384.0
+
+Este factor corresponde a la configuración típica del sensor en un rango de ±2 g, donde 16384 LSB equivalen a 1 g.
+
+Finalmente, el valor calculado de aceleración se imprime por el puerto serial cada 1 segundo, permitiendo observar cómo cambia la medición al inclinar o mover el sensor.
+
+Este procedimiento permite validar tanto la correcta comunicación I2C como el funcionamiento del acelerómetro del MPU6050, observando en tiempo real las variaciones de aceleración en el eje X.
 
 <img width="1600" height="694" alt="image" src="https://github.com/user-attachments/assets/f24eb99f-9479-42cb-924b-b21bba05080a" />
 
