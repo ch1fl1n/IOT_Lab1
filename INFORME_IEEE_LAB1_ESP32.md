@@ -444,6 +444,8 @@ En la simulación se conecta:
 
 Al presionar el botón, el relé se activa.
 
+<img width="1600" height="694" alt="image" src="https://github.com/user-attachments/assets/e483245f-cb50-49d4-b751-45e321dbb752" />
+
 ---
 
 ## Simulación B — Sensor MPU6050
@@ -468,6 +470,8 @@ El registro **WHO_AM_I** normalmente devuelve:
 ```
 0x68
 ```
+
+<img width="1600" height="694" alt="image" src="https://github.com/user-attachments/assets/f24eb99f-9479-42cb-924b-b21bba05080a" />
 
 ---
 
