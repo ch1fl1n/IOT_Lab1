@@ -231,17 +231,6 @@ Los **videos correspondientes a esta prueba con el generador de señales externo
 
 
 ---
-**
-### 3. Mediciones con osciloscopio
-
-Se registraron los parámetros:
-
-- Vmax
-- Vmin
-- Vpp
-- frecuencia
-- forma de onda
-**
 ### 3. Mediciones con osciloscopio
 
 La tercera prueba consistió en la observación directa de la señal generada por el **DAC del ESP32** utilizando un **osciloscopio**, con el objetivo de analizar visualmente la forma de onda producida por el sistema.
