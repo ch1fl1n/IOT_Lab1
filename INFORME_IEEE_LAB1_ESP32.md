@@ -404,6 +404,69 @@ El **jitter temporal** se origina en el uso de:
 
 ---
 
+# V.A Comparación formal ESP32 vs equipo profesional
+
+| Aspecto | Sistema ESP32 | Equipo profesional |
+|---|---|---|
+| Resolución | DAC de 8 bits y ADC de 12 bits; escalonamiento visible | Mayor resolución efectiva; representación más suave |
+| Precisión | Sensible a offset, ganancia y ruido de referencia | Mejor calibración y menor incertidumbre metrológica |
+| Frecuencia útil | Limitada por software y serial en pruebas tipo Arduino | Amplio rango operativo y adquisición optimizada |
+| Ruido | Mayor susceptibilidad a alimentación, cableado y entorno | Mejor inmunidad y acondicionamiento de señal |
+| Estabilidad | Dependiente del montaje y condiciones de laboratorio | Mayor estabilidad temporal y repetibilidad |
+
+Esta comparación confirma que el ESP32 es adecuado para aprendizaje y prototipado, mientras que la instrumentación profesional se mantiene como referencia para medición de alta precisión.
+
+---
+
+# V.B Respuestas de la guía (5 preguntas)
+
+### 1) ¿Cuáles son las características y el funcionamiento general de ADC y DAC en el ESP32?
+El **ADC** convierte voltajes analógicos a valores digitales (hasta 12 bits en ESP32), mientras que el **DAC** realiza la operación inversa (8 bits en GPIO25/GPIO26). En conjunto permiten implementar sistemas básicos de adquisición y generación de señales para aplicaciones educativas e IoT.
+
+### 2) ¿Se puede alcanzar la velocidad máxima de muestreo del ADC desde código Arduino estándar?
+De forma sostenida, no normalmente. El uso de `analogRead()`, el procesamiento dentro del `loop` y el envío por puerto serial reducen la tasa efectiva de muestreo. Para mejorar rendimiento se recomienda modo continuo, DMA e implementación en ESP-IDF.
+
+### 3) ¿Cómo funciona el método SAR?
+El ADC SAR compara iterativamente la señal de entrada contra una referencia interna usando una búsqueda binaria: decide primero el bit más significativo y continúa hasta el menos significativo. Así obtiene una conversión rápida con bajo consumo.
+
+### 4) ¿Cómo implementar un DAC con resistencias y salidas digitales?
+Puede implementarse con una red **R-2R**, donde cada bit conmuta a `Vref` o GND. La salida analógica es proporcional al valor binario aplicado. Para buen desempeño se requiere relación 2:1 estable, tolerancia baja (ideal ≤1%) y estabilidad térmica de resistencias.
+
+### 5) ¿Por qué difieren los resultados frente a equipos profesionales?
+Por la menor resolución, mayor ruido, limitaciones de linealidad, restricciones de muestreo/tiempo de establecimiento y dependencia del software de adquisición. Estas limitaciones se evidencian en escalonamiento, jitter y menor repetibilidad.
+
+---
+
+# V.C Manejo de archivos en ESP32 con microSD
+
+## Interfaz y conexiones SPI recomendadas
+
+| Módulo microSD | ESP32 |
+|---|---|
+| CS | GPIO5 |
+| MOSI (DI) | GPIO23 |
+| MISO (DO) | GPIO19 |
+| SCK | GPIO18 |
+| VCC | 3.3 V |
+| GND | GND |
+
+## Flujo básico de uso
+1. Realizar conexión física SPI con tierra común.
+2. Inicializar tarjeta con librería `SD.h`.
+3. Abrir archivo en modo lectura/escritura.
+4. Registrar datos con marca temporal.
+5. Cerrar archivo para preservar integridad.
+
+## Ejemplo de aplicación (data logger)
+Un caso típico consiste en registrar mediciones periódicas en `datos.txt`, por ejemplo:
+- `2026-03-01 10:30:15, Temperatura: 25.3 C`
+- `2026-03-01 10:31:15, Temperatura: 25.4 C`
+- `2026-03-01 10:32:15, Temperatura: 25.2 C`
+
+Este enfoque permite almacenar evidencia experimental y analizar datos posteriormente en computador.
+
+---
+
 # VI. Simulaciones realizadas
 
 ## Simulación A — Relé
